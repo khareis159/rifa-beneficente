@@ -145,7 +145,7 @@
     <nav class="nav-tabs">
         <button class="tab-btn active" data-target="pane-participante">🎟️ Participar</button>
         <button class="tab-btn" data-target="pane-consulta">🔍 Meus Números</button>
-        <button class="tab-btn hidden" id="btn-admin-tab" data-target="pane-admin">👑 Admin</button>
+        <button class="tab-btn" id="btn-admin-tab" data-target="pane-admin">👑 Admin</button>
     </nav>
 
     <div class="container">
@@ -489,14 +489,14 @@
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                document.getElementById('btn-admin-tab').classList.remove('hidden');
+              // document.getElementById('btn-admin-tab').classList.remove('hidden');
                 document.getElementById('admin-login').classList.add('hidden');
                 document.getElementById('admin-panel').classList.remove('hidden');
                 loadAdminOrders();
                 loadAdminLogs();
                 loadRifaConfig();
             } else {
-                document.getElementById('btn-admin-tab').classList.add('hidden');
+              // document.getElementById('btn-admin-tab').classList.add('hidden');
                 document.getElementById('admin-login').classList.remove('hidden');
                 document.getElementById('admin-panel').classList.add('hidden');
             }
