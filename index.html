@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Super Rifa Beneficente | Sistema de Gestão v3.0</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"
+      }
+    }
+    </script>
+
+    <style>
+        :root {
+            --primary: #0d7a4e;
+            --primary-dark: #0a623f;
+            --secondary: #f39c12;
+            --accent: #c47f0e;
+            --bg: #f8faf8;
+            --text: #1a2e1a;
+            --white: #ffffff;
+            --danger: #b91c1c;
+            --gray: #cfdec0;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg); color: var(--text); line-height: 1.6; padding-bottom: 60px; }
+
+        /* Header & Navigation */
+        .main-header { 
+            background: linear-gradient(135deg, #0b3b2a, #1a5a3a); 
+            color: white; padding: 30px 20px; text-align: center; 
+            border-bottom: 5px solid var(--secondary);
+        }
+        .main-header h1 { font-weight: 800; font-size: 1.8rem; margin-bottom: 10px; }
+        
+        .nav-tabs { 
+            display: flex; justify-content: center; background: white; 
+            position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow);
+        }
+        .tab-btn { 
+            padding: 15px 25px; border: none; background: none; 
+            font-weight: 600; cursor: pointer; transition: 0.3s; 
+            border-bottom: 3px solid transparent; color: #666;
+        }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); background: #f0fdf4; }
+
+        .container { max-width: 1100px; margin: 20px auto; padding: 0 20px; }
+
+        /* Cards */
+        .card { 
+            background: var(--white); border-radius: 20px; padding: 25px; 
+            margin-bottom: 25px; box-shadow: var(--shadow); border: 1px solid var(--gray);
+        }
+        .card-title { 
+            font-size: 0.8rem; text-transform: uppercase; color: var(--primary); 
+            font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
+        }
+        .card-title::before { content: ''; width: 4px; height: 15px; background: var(--secondary); display: inline-block; }
+
+        /* Number Grid */
+        .grid-numeros { 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); 
+            gap: 8px; margin-bottom: 20px; 
+        }
+        .num-box { 
+            aspect-ratio: 1; display: flex; align-items: center; justify-content: center; 
+            border-radius: 10px; font-weight: 800; cursor: pointer; 
+            transition: 0.2s; border: 1px solid var(--gray); background: #fff;
+        }
+        .num-box.livre:hover { background: var(--secondary); color: white; transform: scale(1.05); }
+        .num-box.reservado { background: #fff3e0; color: #f39c12; cursor: not-allowed; border-color: #f39c12; }
+        .num-box.confirmado { background: var(--primary); color: white; cursor: not-allowed; opacity: 0.7; }
+        .num-box.selecionado { background: var(--secondary); color: white; border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.4); }
+
+        /* Forms */
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; }
+        input, select, textarea { 
+            width: 100%; padding: 12px; border: 1px solid var(--gray); 
+            border-radius: 10px; outline: none; transition: 0.2s; font-size: 1rem;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(13, 122, 78, 0.2); }
+
+        /* Buttons */
+        .btn { 
+            padding: 12px 25px; border-radius: 10px; font-weight: 700; 
+            cursor: pointer; transition: 0.3s; border: none; display: inline-flex; 
+            align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem;
+        }
+        .btn-primary { background: var(--primary); color: white; width: 100%; }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+        .btn-outline { background: white; border: 1.5px solid var(--primary); color: var(--primary); }
+        .btn-danger { background: var(--danger); color: white; }
+
+        /* Admin Table */
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { background: #f4f7f4; text-align: left; padding: 12px; border-bottom: 2px solid var(--gray); }
+        td { padding: 12px; border-bottom: 1px solid var(--gray); }
+
+        /* Utilities */
+        .hidden { display: none !important; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
+        .badge-pendente { background: #fff3e0; color: #ef6c00; }
+        .badge-confirmado { background: #e8f5e9; color: #2e7d32; }
+        
+        .toast { 
+            position: fixed; bottom: 20px; right: 20px; background: #333; color: white; 
+            padding: 12px 24px; border-radius: 50px; z-index: 1000; animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        footer { 
+            text-align: center; padding: 30px; color: #666; font-size: 0.85rem; 
+            border-top: 1px solid var(--gray); margin-top: 40px;
+        }
+        .zap-link { color: var(--primary); text-decoration: none; font-weight: 700; }
+
+        @media (max-width: 600px) {
+            .nav-tabs { flex-direction: column; }
+            .tab-btn { width: 100%; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <h1>🌟 Super Rifa Beneficente</h1>
+        <p id="rifa-subtitle">Carregando informações da rifa...</p>
+    </header>
+
+    <nav class="nav-tabs">
+        <button class="tab-btn active" data-target="pane-participante">🎟️ Participar</button>
+        <button class="tab-btn" data-target="pane-consulta">🔍 Meus Números</button>
+        <button class="tab-btn hidden" id="btn-admin-tab" data-target="pane-admin">👑 Admin</button>
+    </nav>
+
+    <div class="container">
+        <!-- SEÇÃO PARTICIPANTE -->
+        <div id="pane-participante" class="tab-pane">
+            <div class="card">
+                <div class="card-title">Escolha seus números</div>
+                <div id="grid-container" class="grid-numeros"></div>
+                <div class="flex-between">
+                    <div><strong>Total a pagar:</strong> <span id="total-valor" style="font-size: 1.2rem; color: var(--primary); font-weight: 800;">R$ 0,00</span></div>
+                    <button class="btn btn-outline" id="btn-limpar">Limpar Seleção</button>
+                </div>
+            </div>
+
+            <div class="card" id="card-cadastro">
+                <div class="card-title">Dados de Cadastro (Obrigatório)</div>
+                <form id="form-reserva">
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label>Nome Completo *</label>
+                            <input type="text" id="nome" required placeholder="Digite seu nome">
+                        </div>
+                        <div class="input-group">
+                            <label>CPF *</label>
+                            <input type="text" id="cpf" required placeholder="000.000.000-00">
+                        </div>
+                        <div class="input-group">
+                            <label>E-mail *</label>
+                            <input type="email" id="email" required placeholder="email@exemplo.com">
+                        </div>
+                        <div class="input-group">
+                            <label>WhatsApp *</label>
+                            <input type="text" id="whatsapp" required placeholder="(61) 99999-9999">
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="input-group" style="flex: 2;">
+                            <label>CEP *</label>
+                            <div style="display:flex; gap: 10px;">
+                                <input type="text" id="cep" required placeholder="00000-000">
+                                <button type="button" class="btn btn-outline" id="btn-buscar-cep">Buscar</button>
+                            </div>
+                        </div>
+                        <div class="input-group" style="flex: 1;">
+                            <label>Número</label>
+                            <input type="text" id="num-casa">
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="input-group"><label>Endereço</label><input type="text" id="rua" readonly></div>
+                        <div class="input-group"><label>Bairro</label><input type="text" id="bairro" readonly></div>
+                        <div class="input-group"><label>Cidade</label><input type="text" id="cidade" readonly></div>
+                        <div class="input-group"><label>UF</label><input type="text" id="uf" readonly></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="margin-top: 20px;">✅ Reservar Números e Gerar PIX</button>
+                </form>
+            </div>
+
+            <div id="pix-result" class="card hidden" style="border: 2px solid var(--secondary); background: #fffdfa;">
+                <div class="card-title">Pagamento via PIX</div>
+                <p style="margin-bottom: 15px;">Para confirmar sua reserva, realize o pagamento da chave abaixo:</p>
+                <div style="background: #eee; padding: 15px; border-radius: 10px; text-align: center; font-family: monospace; font-size: 1.2rem; font-weight: 800; margin-bottom: 20px;">
+                    61996487649
+                </div>
+                <p style="text-align: center; margin-bottom: 20px;"><strong>Valor Total: <span id="pix-valor">R$ 0,00</span></strong></p>
+                <a id="btn-whatsapp-pay" href="#" target="_blank" class="btn btn-primary" style="text-decoration:none;">📲 Enviar Comprovante via WhatsApp</a>
+                <p style="font-size: 0.75rem; color: #777; text-align: center; margin-top: 15px;">Os números ficam reservados por 2 horas. Após isso, voltam a ficar livres.</p>
+            </div>
+        </div>
+
+        <!-- SEÇÃO CONSULTA -->
+        <div id="pane-consulta" class="tab-pane hidden">
+            <div class="card">
+                <div class="card-title">Consultar Minhas Cotas</div>
+                <p style="margin-bottom: 15px; font-size: 0.9rem;">Insira seu CPF para verificar o status da sua participação.</p>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="search-cpf" placeholder="000.000.000-00">
+                    <button class="btn btn-primary" id="btn-search" style="width: auto;">Buscar</button>
+                </div>
+                <div id="search-result" class="hidden" style="margin-top: 20px; padding: 15px; border-radius: 10px; background: #f0fdf4; border: 1px solid var(--primary);">
+                    <!-- Resultado via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- SEÇÃO ADMIN -->
+        <div id="pane-admin" class="tab-pane hidden">
+            <div id="admin-login" class="card">
+                <div class="card-title">Acesso Administrativo</div>
+                <div class="input-group">
+                    <label>E-mail</label>
+                    <input type="email" id="adm-email">
+                </div>
+                <div class="input-group">
+                    <label>Senha</label>
+                    <input type="password" id="adm-pass">
+                </div>
+                <button class="btn btn-primary" id="btn-login">Entrar no Painel</button>
+            </div>
+
+            <div id="admin-panel" class="hidden">
+                <div class="flex-between" style="margin-bottom: 20px;">
+                    <h2>Gestão de Pedidos</h2>
+                    <button class="btn btn-danger" id="btn-logout">Sair</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Pedidos Recebidos</div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Comprador</th>
+                                    <th>Números</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Configurações da Rifa</div>
+                    <div class="form-grid">
+                        <div class="input-group"><label>Nome da Rifa</label><input type="text" id="conf-nome"></div>
+                        <div class="input-group"><label>Valor Cota (R$)</label><input type="number" id="conf-valor"></div>
+                        <div class="input-group"><label>Total Números</label><input type="number" id="conf-total"></div>
+                    </div>
+                    <button class="btn btn-primary" id="btn-save-conf" style="width: auto;">Salvar Alterações</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Log de Auditoria</div>
+                    <div id="admin-logs" style="font-size: 0.8rem; max-height: 200px; overflow-y: auto; background: #fafafa; padding: 10px; border-radius: 10px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© Carlos Alberto Reis 2026 | Suporte: <a href="https://wa.me/5561996487649" class="zap-link">61 99648-7649</a></p>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "firebase/app";
+        import { 
+            getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, 
+            deleteDoc, query, where, onSnapshot, runTransaction, orderBy, Timestamp 
+        } from "firebase/firestore";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+
+        // ================= CONFIGURAÇÃO FIREBASE =================
+        const firebaseConfig = {
+            apiKey: "SUA_API_KEY",
+            authDomain: "SEU_PROJETO.firebaseapp.com",
+            projectId: "SEU_PROJETO",
+            storageBucket: "SEU_PROJETO.appspot.com",
+            messagingSenderId: "SEU_SENDER_ID",
+            appId: "SEU_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // ================= ESTADO GLOBAL =================
+        let rifaData = null;
+        let selectedNumbers = new Set();
+        let currentUserId = null;
+
+        // ================= UTILITÁRIOS =================
+        const toast = (msg) => {
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        };
+
+        const fmtMoney = (v) => `R$ ${v.toFixed(2).replace('.',',')}`;
+
+        const maskCPF = (v) => v.replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+        const maskPhone = (v) => v.replace(/\D/g, '').replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+
+        // ================= LÓGICA PARTICIPANTE =================
+        async function initRifa() {
+            const snap = await getDoc(doc(db, "rifas", "ativa"));
+            if (snap.exists()) {
+                rifaData = snap.data();
+                document.getElementById('rifa-subtitle').textContent = `${rifaData.nome} - Prêmio: ${rifaData.premio || 'Consulte o Admin'}`;
+                renderGrid();
+            } else {
+                // Seed inicial caso não exista
+                await setDoc(doc(db, "rifas", "ativa"), { 
+                    nome: "Rifa Solidária", 
+                    valorCota: 10, 
+                    totalNumeros: 100, 
+                    premio: "Prêmio Especial" 
+                });
+                location.reload();
+            }
+        }
+
+        function renderGrid() {
+            const container = document.getElementById('grid-container');
+            container.innerHTML = '';
+            
+            // Listener em tempo real para os números
+            onSnapshot(collection(db, "numeros"), (snapshot) => {
+                const numbersState = {};
+                snapshot.forEach(doc => numbersState[doc.id] = doc.data().status);
+
+                container.innerHTML = '';
+                for (let i = 1; i <= rifaData.totalNumeros; i++) {
+                    const status = numbersState[i] || 'livre';
+                    const div = document.createElement('div');
+                    div.className = `num-box ${status} ${selectedNumbers.has(i) ? 'selecionado' : ''}`;
+                    div.textContent = i;
+                    
+                    if (status === 'livre') {
+                        div.onclick = () => {
+                            if (selectedNumbers.has(i)) selectedNumbers.delete(i);
+                            else selectedNumbers.add(i);
+                            updateTotal();
+                            renderGrid(); 
+                        };
+                    }
+                    container.appendChild(div);
+                }
+            });
+        }
+
+        function updateTotal() {
+            const total = selectedNumbers.size * rifaData.valorCota;
+            document.getElementById('total-valor').textContent = fmtMoney(total);
+            document.getElementById('pix-valor').textContent = fmtMoney(total);
+        }
+
+        // ViaCEP
+        document.getElementById('btn-buscar-cep').onclick = async () => {
+            const cep = document.getElementById('cep').value.replace(/\D/g, '');
+            if (cep.length !== 8) return toast("CEP inválido");
+            try {
+                const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                const data = await res.json();
+                if (data.erro) throw new Error();
+                document.getElementById('rua').value = data.logradouro;
+                document.getElementById('bairro').value = data.bairro;
+                document.getElementById('cidade').value = data.localidade;
+                document.getElementById('uf').value = data.uf;
+            } catch { toast("CEP não encontrado"); }
+        };
+
+        // Reserva de Números (Engenharia de Transação)
+        document.getElementById('form-reserva').onsubmit = async (e) => {
+            e.preventDefault();
+            if (selectedNumbers.size === 0) return toast("Selecione ao menos um número!");
+
+            const formData = {
+                nome: document.getElementById('nome').value.trim(),
+                cpf: document.getElementById('cpf').value.replace(/\D/g, ''),
+                email: document.getElementById('email').value.trim(),
+                whatsapp: document.getElementById('whatsapp').value.trim(),
+                cep: document.getElementById('cep').value.replace(/\D/g, ''),
+                endereco: `${document.getElementById('rua').value}, ${document.getElementById('num-casa').value}`
+            };
+
+            const pedidoId = `PED_${Date.now()}`;
+            const totalValor = selectedNumbers.size * rifaData.valorCota;
+
+            try {
+                await runTransaction(db, async (transaction) => {
+                    for (let num of selectedNumbers) {
+                        const numRef = doc(db, "numeros", String(num));
+                        const numSnap = await transaction.get(numRef);
+                        if (numSnap.exists() && numSnap.data().status !== 'livre') {
+                            throw new Error(`O número ${num} acabou de ser reservado!`);
+                        }
+                        transaction.set(numRef, { status: 'reservado', pedidoId });
+                    }
+                    transaction.set(doc(db, "pedidos", pedidoId), {
+                        ...formData,
+                        numeros: Array.from(selectedNumbers),
+                        valorTotal: totalValor,
+                        status: 'pendente',
+                        dataCriacao: Timestamp.now()
+                    });
+                });
+
+                // Sucesso
+                document.getElementById('card-cadastro').classList.add('hidden');
+                document.getElementById('pix-result').classList.remove('hidden');
+                
+                const msgZap = `Olá! Fiz a reserva da rifa.\nID: ${pedidoId}\nNome: ${formData.nome}\nNúmeros: ${Array.from(selectedNumbers).join(', ')}\nValor: ${fmtMoney(totalValor)}\nSegue o comprovante do PIX.`;
+                document.getElementById('btn-whatsapp-pay').href = `https://wa.me/5561996487649?text=${encodeURIComponent(msgZap)}`;
+                
+                toast("Reserva efetuada com sucesso!");
+            } catch (err) {
+                toast(err.message);
+            }
+        };
+
+        // Consulta de Números
+        document.getElementById('btn-search').onclick = async () => {
+            const cpf = document.getElementById('search-cpf').value.replace(/\D/g, '');
+            if (cpf.length !== 11) return toast("CPF inválido");
+            
+            const q = query(collection(db, "pedidos"), where("cpf", "==", cpf));
+            const snap = await getDocs(q);
+            const resDiv = document.getElementById('search-result');
+            resDiv.classList.remove('hidden');
+
+            if (snap.empty) {
+                resDiv.innerHTML = "❌ Nenhuma participação encontrada para este CPF.";
+                resDiv.style.background = "#fff5f5";
+            } else {
+                let html = "<strong>Sua Participação:</strong><br>";
+                snap.forEach(doc => {
+                    const p = doc.data();
+                    html += `🔢 Números: ${p.numeros.join(', ')} | Status: <span class="badge badge-${p.status}">${p.status}</span><br>`;
+                });
+                resDiv.innerHTML = html;
+                resDiv.style.background = "#f0fdf4";
+            }
+        };
+
+        // ================= LÓGICA ADMIN =================
+        document.getElementById('btn-login').onclick = async () => {
+            const email = document.getElementById('adm-email').value;
+            const pass = document.getElementById('adm-pass').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+                toast("Acesso concedido!");
+            } catch { toast("Falha no login"); }
+        };
+
+        document.getElementById('btn-logout').onclick = () => signOut(auth);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('btn-admin-tab').classList.remove('hidden');
+                document.getElementById('admin-login').classList.add('hidden');
+                document.getElementById('admin-panel').classList.remove('hidden');
+                loadAdminOrders();
+                loadAdminLogs();
+                loadRifaConfig();
+            } else {
+                document.getElementById('btn-admin-tab').classList.add('hidden');
+                document.getElementById('admin-login').classList.remove('hidden');
+                document.getElementById('admin-panel').classList.add('hidden');
+            }
+        });
+
+        async function loadAdminOrders() {
+            const q = query(collection(db, "pedidos"), orderBy("dataCriacao", "desc"));
+            const snap = await getDocs(q);
+            const body = document.getElementById('admin-table-body');
+            body.innerHTML = '';
+
+            snap.forEach(docSnap => {
+                const p = docSnap.data();
+                const id = docSnap.id;
+                body.innerHTML += `
+                    <tr>
+                        <td>${p.nome}<br><small>${p.whatsapp}</small></td>
+                        <td>${p.numeros.join(', ')}</td>
+                        <td>${fmtMoney(p.valorTotal)}</td>
+                        <td><span class="badge badge-${p.status}">${p.status}</span></td>
+                        <td>
+                            <button class="btn btn-outline" style="padding:5px 10px" onclick="window.admApprove('${id}')">✔</button>
+                            <button class="btn btn-danger" style="padding:5px 10px" onclick="window.admDelete('${id}')">🗑</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        window.admApprove = async (id) => {
+            const pRef = doc(db, "pedidos", id);
+            const pSnap = await getDoc(pRef);
+            const p = pSnap.data();
+
+            await runTransaction(db, async (transaction) => {
+                p.numeros.forEach(num => {
+                    transaction.update(doc(db, "numeros", String(num)), { status: 'confirmado' });
+                });
+                transaction.update(pRef, { status: 'confirmado' });
+                transaction.set(doc(collection(db, "admin_logs")), {
+                    acao: 'APROVAÇÃO',
+                    detalhes: `Pedido ${id} aprovado`,
+                    data: Timestamp.now()
+                });
+            });
+            toast("Pedido Confirmado!");
+            loadAdminOrders();
+        };
+
+        window.admDelete = async (id) => {
+            if (!confirm("Excluir pedido e liberar números?")) return;
+            const pRef = doc(db, "pedidos", id);
+            const pSnap = await getDoc(pRef);
+            const p = pSnap.data();
+
+            await runTransaction(db, async (transaction) => {
+                p.numeros.forEach(num => {
+                    transaction.update(doc(db, "numeros", String(num)), { status: 'livre', pedidoId: null });
+                });
+                transaction.delete(pRef);
+                transaction.set(doc(collection(db, "admin_logs")), {
+                    acao: 'EXCLUSÃO',
+                    detalhes: `Pedido ${id} deletado`,
+                    data: Timestamp.now()
+                });
+            });
+            toast("Pedido removido!");
+            loadAdminOrders();
+        };
+
+        async function loadRifaConfig() {
+            const snap = await getDoc(doc(db, "rifas", "ativa"));
+            const d = snap.data();
+            document.getElementById('conf-nome').value = d.nome;
+            document.getElementById('conf-valor').value = d.valorCota;
+            document.getElementById('conf-total').value = d.totalNumeros;
+        }
+
+        document.getElementById('btn-save-conf').onclick = async () => {
+            await updateDoc(doc(db, "rifas", "ativa"), {
+                nome: document.getElementById('conf-nome').value,
+                valorCota: Number(document.getElementById('conf-valor').value),
+                totalNumeros: Number(document.getElementById('conf-total').value)
+            });
+            toast("Configurações salvas!");
+            location.reload();
+        };
+
+        async function loadAdminLogs() {
+            const q = query(collection(db, "admin_logs"), orderBy("data", "desc"));
+            const snap = await getDocs(q);
+            const logDiv = document.getElementById('admin-logs');
+            logDiv.innerHTML = '';
+            snap.forEach(doc => {
+                const l = doc.data();
+                logDiv.innerHTML += `<div>[${l.data.toDate().toLocaleString()}] <strong>${l.acao}</strong>: ${l.detalhes}</div>`;
+            });
+        }
+
+        // ================= INTERFACE & NAVEGAÇÃO =================
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.target).classList.remove('hidden');
+            };
+        });
+
+        document.getElementById('btn-limpar').onclick = () => {
+            selectedNumbers.clear();
+            updateTotal();
+            renderGrid();
+        };
+
+        // Máscaras em tempo real
+        document.getElementById('cpf').oninput = (e) => e.target.value = maskCPF(e.target.value);
+        document.getElementById('whatsapp').oninput = (e) => e.target.value = maskPhone(e.target.value);
+
+        // Inicialização Global
+        initRifa();
+    </script>
+</body>
+</html>
