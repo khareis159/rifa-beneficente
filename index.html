@@ -418,37 +418,51 @@
 
             const pedidoId = `PED_${Date.now()}`;
             const totalValor = selectedNumbers.size * rifaData.valorCota;
-
-            try {
-                await runTransaction(db, async (transaction) => {
-                    for (let num of selectedNumbers) {
-                        const numRef = doc(db, "numeros", String(num));
-                        const numSnap = await transaction.get(numRef);
-                        if (numSnap.exists() && numSnap.data().status !== 'livre') {
-                            throw new Error(`O número ${num} acabou de ser reservado!`);
-                        }
-                        transaction.set(numRef, { status: 'reservado', pedidoId });
-                    }
-                    transaction.set(doc(db, "pedidos", pedidoId), {
-                        ...formData,
-                        numeros: Array.from(selectedNumbers),
-                        valorTotal: totalValor,
-                        status: 'pendente',
-                        dataCriacao: Timestamp.now()
-                    });
-                });
-
-                // Sucesso
-                document.getElementById('card-cadastro').classList.add('hidden');
-                document.getElementById('pix-result').classList.remove('hidden');
-                
-                const msgZap = `Olá! Fiz a reserva da rifa.\nID: ${pedidoId}\nNome: ${formData.nome}\nNúmeros: ${Array.from(selectedNumbers).join(', ')}\nValor: ${fmtMoney(totalValor)}\nSegue o comprovante do PIX.`;
-                document.getElementById('btn-whatsapp-pay').href = `https://wa.me/5561996487649?text=${encodeURIComponent(msgZap)}`;
-                
-                toast("Reserva efetuada com sucesso!");
-            } catch (err) {
-                toast(err.message);
+      try {
+        await runTransaction(db, async (transaction) => {
+            // --- FASE 1: LEITURA (TUDO PRIMEIRO) ---
+            const reads = [];
+            for (let num of selectedNumbers) {
+                const numRef = doc(db, "numeros", String(num));
+                const snap = await transaction.get(numRef);
+                reads.push({ ref: numRef, snap: snap });
             }
+
+            // --- FASE 2: VALIDAÇÃO ---
+            for (let item of reads) {
+                const data = item.snap.exists() ? item.snap.data() : { status: 'livre' };
+                if (data.status !== 'livre') {
+                    throw new Error(`O número ${item.ref.id} já foi reservado por outra pessoa!`);
+                }
+            }
+
+            // --- FASE 3: ESCRITA (TUDO POR ÚLTIMO) ---
+            for (let item of reads) {
+                transaction.set(item.ref, { status: 'reservado', pedidoId }, { merge: true });
+            }
+            
+            transaction.set(doc(db, "pedidos", pedidoId), {
+                ...formData,
+                numeros: Array.from(selectedNumbers),
+                valorTotal: totalValor,
+                status: 'pendente',
+                dataCriacao: Timestamp.now()
+            });
+        });
+
+        // Sucesso
+        document.getElementById('card-cadastro').classList.add('hidden');
+        document.getElementById('pix-result').classList.remove('hidden');
+        
+        const msgZap = `Olá! Fiz a reserva da rifa.\nID: ${pedidoId}\nNome: ${formData.nome}\nNúmeros: ${Array.from(selectedNumbers).join(', ')}\nValor: ${fmtMoney(totalValor)}\nSegue o comprovante do PIX.`;
+        document.getElementById('btn-whatsapp-pay').href = `https://wa.me/5561996487649?text=${encodeURIComponent(msgZap)}`;
+        
+        toast("Reserva efetuada com sucesso!");
+    } catch (err) {
+        console.error(err);
+        toast(err.message);
+    }           
+            
         };
 
         // Consulta de Números
