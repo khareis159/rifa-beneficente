@@ -208,7 +208,7 @@
                 <div class="card-title">Pagamento via PIX</div>
                 <p style="margin-bottom: 15px;">Para confirmar sua reserva, realize o pagamento da chave abaixo:</p>
                 <div style="background: #eee; padding: 15px; border-radius: 10px; text-align: center; font-family: monospace; font-size: 1.2rem; font-weight: 800; margin-bottom: 20px;">
-                    61996487649
+                    61999487649
                 </div>
                 <p style="text-align: center; margin-bottom: 20px;"><strong>Valor Total: <span id="pix-valor">R$ 0,00</span></strong></p>
                 <a id="btn-whatsapp-pay" href="#" target="_blank" class="btn btn-primary" style="text-decoration:none;">📲 Enviar Comprovante via WhatsApp</a>
@@ -289,7 +289,7 @@
     </div>
 
     <footer>
-        <p>© Carlos Alberto Reis 2026 | Suporte: <a href="https://wa.me/5561996487649" class="zap-link">61 99648-7649</a></p>
+        <p>© Carlos Alberto Reis 2026 | Suporte: <a href="https://wa.me/5561999487649" class="zap-link">61 99648-7649</a></p>
     </footer>
 
     <script type="module">
@@ -455,7 +455,7 @@
         document.getElementById('pix-result').classList.remove('hidden');
         
         const msgZap = `Olá! Fiz a reserva da rifa.\nID: ${pedidoId}\nNome: ${formData.nome}\nNúmeros: ${Array.from(selectedNumbers).join(', ')}\nValor: ${fmtMoney(totalValor)}\nSegue o comprovante do PIX.`;
-        document.getElementById('btn-whatsapp-pay').href = `https://wa.me/5561996487649?text=${encodeURIComponent(msgZap)}`;
+        document.getElementById('btn-whatsapp-pay').href = `https://wa.me/5561999487649?text=${encodeURIComponent(msgZap)}`;
         
         toast("Reserva efetuada com sucesso!");
     } catch (err) {
